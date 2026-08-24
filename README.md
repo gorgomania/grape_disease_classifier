@@ -1,41 +1,41 @@
-# Классификатор болезней винограда
+# Grape Disease Classifier
 
-Нейросеть на основе **EfficientNet-B0** для определения болезней листьев винограда по фотографии. Поддерживает 4 класса:
+A neural network based on **EfficientNet-B0** for identifying diseases in grape leaves from photos. Supports 4 classes:
 
-| Класс           | Описание      |
-|-----------------|---------------|
-| **Healthy**     | Здоровый      |
-| **Black Rot**   | Чёрная гниль  |
-| **ESCA**        | Эска          |
-| **Leaf Blight** | Листовой ожог |
+| Class           | Description  |
+|-----------------|--------------|
+| **Healthy**     | Healthy      |
+| **Black Rot**   | Black Rot    |
+| **ESCA**        | ESCA         |
+| **Leaf Blight** | Leaf Blight  |
 
-## Структура проекта
+## Project Structure
 
 ```
-├── train_grape.py            # Обучение модели
-├── convert.py                # Конвертация .pth → .onnx
-├── test_model_pth.py         # Тестирование PyTorch-модели
-├── test_model_onnx.py        # Тестирование ONNX-модели
-├── create_vineyard_archives.py  # Генерация датасета виноградника
-├── best_grape_model.pth      # Обученная модель (PyTorch)
-└── grape_model.onnx          # Модель для деплоя (ONNX)
+├── train_grape.py            # Model training
+├── convert.py                # Conversion .pth → .onnx
+├── test_model_pth.py         # PyTorch model evaluation
+├── test_model_onnx.py        # ONNX model evaluation
+├── create_vineyard_archives.py  # Vineyard dataset generation
+├── best_grape_model.pth      # Trained model (PyTorch)
+└── grape_model.onnx          # Deployment model (ONNX)
 ```
 
-## Датасет
+## Dataset
 
-[Grape Leaf Disease Augmented Dataset](https://huggingface.co/datasets/adamkatchee/grape-leaf-disease-augmented-dataset) — аугментированный датасет болезней листьев винограда (Hugging Face).
+[Grape Leaf Disease Augmented Dataset](https://huggingface.co/datasets/adamkatchee/grape-leaf-disease-augmented-dataset) — an augmented grape leaf disease dataset (Hugging Face).
 
-## Требования
+## Requirements
 
 ```bash
 pip install torch torchvision onnxruntime scikit-learn tqdm
 ```
 
-## Использование
+## Usage
 
-### 1. Обучение
+### 1. Training
 
-Подготовьте датасет в папке `data/`:
+Prepare the dataset in the `data/` folder:
 ```
 data/
 ├── train/
@@ -50,59 +50,59 @@ data/
     └── Leaf Blight/
 ```
 
-Запустите обучение:
+Run training:
 ```bash
 python train_grape.py
 ```
 
-Модель обучается 15 эпох с использованием mixed precision (оптимизировано для GTX 1060 3GB). Лучшие веса сохраняются в `best_grape_model.pth`.
+The model trains for 15 epochs using mixed precision (optimized for GTX 1060 3GB). Best weights are saved to `best_grape_model.pth`.
 
-### 2. Конвертация в ONNX
+### 2. Convert to ONNX
 
 ```bash
 python convert.py
 ```
 
-Создаёт `grape_model.onnx` для развёртывания без зависимости от PyTorch.
+Creates `grape_model.onnx` for deployment without a PyTorch dependency.
 
-### 3. Тестирование
+### 3. Evaluation
 
-Оценка PyTorch-модели:
+Evaluate the PyTorch model:
 ```bash
 python test_model_pth.py
 ```
 
-Оценка ONNX-модели:
+Evaluate the ONNX model:
 ```bash
 python test_model_onnx.py
 ```
 
-Оба скрипта выводят `classification report` и матрицу ошибок.
+Both scripts print a classification report and confusion matrix.
 
-### 4. Генерация датасета виноградника
+### 4. Vineyard Dataset Generation
 
-Скрипт `create_vineyard_archives.py` создаёт синтетический датасет виноградника из реальных изображений — имитирует расстановку по рядам и кустам с заданным распределением болезней (по умолчанию: 85% здоровых, по 5% каждой болезни). Результат упаковывается в ZIP-архивы по 1 ГБ.
+The `create_vineyard_archives.py` script creates a synthetic vineyard dataset from real images — it simulates placement by rows and bushes with a specified disease distribution (default: 85% healthy, 5% each disease). The result is packed into 1 GB ZIP archives.
 
 ```bash
 python create_vineyard_archives.py
-# Введите структуру виноградника, например: [10, 12, 15, 10]
+# Enter vineyard structure, e.g.: [10, 12, 15, 10]
 ```
 
-## Метрики
+## Metrics
 
-Тестовая выборка: **3 610 изображений**.
+Test set: **3,610 images**.
 
 ### PyTorch (.pth)
 
-| Класс           | Precision | Recall  | F1-score | Изображений |
-|-----------------|-----------|---------|----------|-------------|
-| **Black Rot**   | 99,89%    | 99,68%  | 99,79%   | 944         |
-| **ESCA**        | 99,79%    | 99,90%  | 99,84%   | 960         |
-| **Healthy**     | 100,00%   | 99,88%  | 99,94%   | 846         |
-| **Leaf Blight** | 99,77%    | 100,00% | 99,88%   | 860         |
-| **Итого**       | 99,86%    | 99,86%  | 99,86%   | 3 610       |
+| Class           | Precision | Recall  | F1-score | Images |
+|-----------------|-----------|---------|----------|--------|
+| **Black Rot**   | 99.89%    | 99.68%  | 99.79%   | 944    |
+| **ESCA**        | 99.79%    | 99.90%  | 99.84%   | 960    |
+| **Healthy**     | 100.00%   | 99.88%  | 99.94%   | 846    |
+| **Leaf Blight** | 99.77%    | 100.00% | 99.88%   | 860    |
+| **Total**       | 99.86%    | 99.86%  | 99.86%   | 3,610  |
 
-#### Матрица ошибок (PTH)
+#### Confusion Matrix (PTH)
 
 |                 | Black Rot | ESCA | Healthy | Leaf Blight |
 |-----------------|-----------|------|---------|-------------|
@@ -113,15 +113,15 @@ python create_vineyard_archives.py
 
 ### ONNX (.onnx)
 
-| Класс           | Precision | Recall  | F1-score | Изображений |
-|-----------------|-----------|---------|----------|-------------|
-| **Black Rot**   | 99,68%    | 99,58%  | 99,63%   | 944         |
-| **ESCA**        | 99,69%    | 99,79%  | 99,74%   | 960         |
-| **Healthy**     | 99,65%    | 99,76%  | 99,70%   | 846         |
-| **Leaf Blight** | 99,77%    | 99,65%  | 99,71%   | 860         |
-| **Итого**       | 99,70%    | 99,70%  | 99,70%   | 3 610       |
+| Class           | Precision | Recall  | F1-score | Images |
+|-----------------|-----------|---------|----------|--------|
+| **Black Rot**   | 99.68%    | 99.58%  | 99.63%   | 944    |
+| **ESCA**        | 99.69%    | 99.79%  | 99.74%   | 960    |
+| **Healthy**     | 99.65%    | 99.76%  | 99.70%   | 846    |
+| **Leaf Blight** | 99.77%    | 99.65%  | 99.71%   | 860    |
+| **Total**       | 99.70%    | 99.70%  | 99.70%   | 3,610  |
 
-#### Матрица ошибок (ONNX)
+#### Confusion Matrix (ONNX)
 
 |                 | Black Rot | ESCA | Healthy | Leaf Blight |
 |-----------------|-----------|------|---------|-------------|
@@ -130,10 +130,10 @@ python create_vineyard_archives.py
 | **Healthy**     | 1         | 0    | 844     | 1           |
 | **Leaf Blight** | 0         | 0    | 3       | 857         |
 
-## Модель
+## Model
 
-- **Архитектура:** EfficientNet-B0 (предобученная на ImageNet, дообученная на данных винограда)
-- **Входной размер:** 224×224 RGB
-- **Оптимизатор:** Adam (lr=0.0005)
-- **Эпох:** 15
-- **Batch size:** 16 (для 3GB VRAM)
+- **Architecture:** EfficientNet-B0 (pretrained on ImageNet, fine-tuned on grape data)
+- **Input size:** 224×224 RGB
+- **Optimizer:** Adam (lr=0.0005)
+- **Epochs:** 15
+- **Batch size:** 16 (for 3GB VRAM)
