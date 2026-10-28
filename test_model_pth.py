@@ -1,5 +1,3 @@
-import os
-
 import numpy as np
 import torch
 from sklearn.metrics import classification_report, confusion_matrix
@@ -18,7 +16,7 @@ transform = transforms.Compose([
 ])
  
 test_dataset = datasets.ImageFolder(
-    os.path.join('test', 'test'),
+    'data',
     transform=transform
 )
 test_loader = DataLoader(

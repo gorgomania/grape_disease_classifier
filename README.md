@@ -28,7 +28,9 @@ A neural network based on **EfficientNet-B0** for identifying diseases in grape 
 ## Requirements
 
 ```bash
-pip install torch torchvision onnxruntime scikit-learn tqdm
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 ```
 
 ## Usage

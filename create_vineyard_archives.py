@@ -154,10 +154,10 @@ if __name__ == "__main__":
     vineyard_structure = [int(i) for i in input()[1:-1].split(',')]
     
     source_folders = {
-        'Black Rot': r"C:\Users\GEORGE\Desktop\Нейронка\test\test\Black Rot",
-        'Leaf Blight': r"C:\Users\GEORGE\Desktop\Нейронка\test\test\Leaf Blight", 
-        'Healthy': r"C:\Users\GEORGE\Desktop\Нейронка\test\test\Healthy",
-        'ESCA': r"C:\Users\GEORGE\Desktop\Нейронка\test\test\ESCA"
+        'Black Rot': 'data/Black Rot',
+        'Leaf Blight': 'data/Leaf Blight',
+        'Healthy': 'data/Healthy',
+        'ESCA': 'data/ESCA'
     }
     
     # Распределение: 85% здоровых, по 5% на каждую болезнь
