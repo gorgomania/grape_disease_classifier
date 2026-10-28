@@ -1,5 +1,6 @@
 import gc  # для очистки памяти
 import os
+import sys
 
 import torch
 from torch import nn
@@ -30,7 +31,7 @@ if __name__ == "__main__":
     if not os.path.exists(data_dir):
         print(f"Ошибка: папка {data_dir} не найдена!")
         print("Создайте папку 'data' и поместите в нее train и test папки")
-        exit(1)
+        sys.exit(1)
 
     # Оптимизированные преобразования для 3GB VRAM
     transform = transforms.Compose([
@@ -72,13 +73,13 @@ if __name__ == "__main__":
         batch_size=BATCH_SIZE, 
         shuffle=True,
         num_workers=2,  # не перегружаем процессор
-        pin_memory=True if torch.cuda.is_available() else False
+        pin_memory=bool(torch.cuda.is_available())
     )
     test_loader = DataLoader(
         test_dataset, 
         batch_size=BATCH_SIZE,
         num_workers=2,
-        pin_memory=True if torch.cuda.is_available() else False
+        pin_memory=bool(torch.cuda.is_available())
     )
 
     print("Загружаем предобученную EfficientNet-B0...")
@@ -89,7 +90,7 @@ if __name__ == "__main__":
     model.classifier[1] = nn.Linear(model.classifier[1].in_features, num_classes)
 
     # Используем mixed precision для экономии памяти
-    scaler = torch.cuda.amp.GradScaler() if torch.cuda.is_available() else None
+    scaler = torch.amp.GradScaler('cuda') if torch.cuda.is_available() else None
 
     model = model.to(device)
 
@@ -120,7 +121,7 @@ if __name__ == "__main__":
             
             # Mixed precision training (экономия памяти)
             if scaler:
-                with torch.cuda.amp.autocast():
+                with torch.amp.autocast('cuda'):
                     outputs = model(images)
                     loss = criterion(outputs, labels)
                 scaler.scale(loss).backward()
@@ -168,6 +169,6 @@ if __name__ == "__main__":
             torch.cuda.empty_cache()
         gc.collect()
 
-    print(f"\nОбучение завершено!")
+    print("\nОбучение завершено!")
     print(f"Лучшая точность: {best_accuracy:.2f}%")
-    print(f"Модель сохранена как 'best_grape_model.pth'")
+    print("Модель сохранена как 'best_grape_model.pth'")

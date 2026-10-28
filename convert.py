@@ -1,5 +1,6 @@
 # convert_to_onnx.py
 import json
+import sys
 
 import torch
 from torch import nn
@@ -24,7 +25,7 @@ try:
 except RuntimeError as e:
     print(f"Ошибка загрузки модели: {e}")
     print("Проверьте, что файл best_grape_model.pth существует и количество классов совпадает")
-    exit(1)
+    sys.exit(1)
 
 model.eval()
 
@@ -50,7 +51,7 @@ try:
     print("Модель сконвертирована в grape_model.onnx")
 except Exception as e:
     print(f"Ошибка конвертации: {e}")
-    exit(1)
+    sys.exit(1)
 
 # 5. Сохраняем названия классов (замените на реальные названия ваших сортов винограда)
 class_names = ['class1', 'class2', 'class3', 'class4']  # 4 класса для 4 сортов
