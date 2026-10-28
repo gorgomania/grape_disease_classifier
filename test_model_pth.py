@@ -1,11 +1,12 @@
-import torch
-import torch.nn as nn
-from torchvision import datasets, transforms, models
-from torch.utils.data import DataLoader
-from sklearn.metrics import classification_report, confusion_matrix
-import numpy as np
 import os
- 
+
+import numpy as np
+import torch
+from sklearn.metrics import classification_report, confusion_matrix
+from torch import nn
+from torch.utils.data import DataLoader
+from torchvision import datasets, models, transforms
+
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f"Устройство: {device}")
  

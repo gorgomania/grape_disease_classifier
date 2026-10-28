@@ -1,16 +1,17 @@
-import torch
-import torch.nn as nn
-from torchvision import datasets, transforms, models
-from torch.utils.data import DataLoader
-import os
-from tqdm import tqdm
 import gc  # для очистки памяти
+import os
+
+import torch
+from torch import nn
+from torch.utils.data import DataLoader
+from torchvision import datasets, models, transforms
+from tqdm import tqdm
 
 if __name__ == "__main__":
 
     print("Начинаем обучение модели...")
-    print(f"Процессор: Intel Core i5-7400")
-    print(f"Видеокарта: GTX 1060 3GB")
+    print("Процессор: Intel Core i5-7400")
+    print("Видеокарта: GTX 1060 3GB")
 
     # Проверка CUDA
     if torch.cuda.is_available():

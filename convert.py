@@ -1,9 +1,10 @@
 # convert_to_onnx.py
-import torch
-import torch.nn as nn
-from torchvision import models
-import numpy as np
 import json
+
+import torch
+from torch import nn
+from torchvision import models
+
 
 # 1. Воссоздаем архитектуру модели
 def create_model(num_classes):

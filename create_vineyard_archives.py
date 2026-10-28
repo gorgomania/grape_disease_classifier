@@ -3,6 +3,7 @@ import shutil
 import zipfile
 from pathlib import Path
 
+
 def generate_vineyard_dataset(structure, source_folders, output_dir, max_archive_size_gb=1, distribution=None):
     """
     structure: список с количеством кустов по рядам

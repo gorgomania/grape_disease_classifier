@@ -1,9 +1,10 @@
-import onnxruntime as ort
-from torchvision import datasets, transforms
-from torch.utils.data import DataLoader
-from sklearn.metrics import classification_report, confusion_matrix
-import numpy as np
 import os
+
+import numpy as np
+import onnxruntime as ort
+from sklearn.metrics import classification_report, confusion_matrix
+from torch.utils.data import DataLoader
+from torchvision import datasets, transforms
 
 print("Загружаем ONNX модель...")
 session = ort.InferenceSession('grape_model.onnx')
