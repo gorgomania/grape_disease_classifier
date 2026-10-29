@@ -1,4 +1,5 @@
 data/
+vineyard_dataset/
 .venv/
 __pycache__/
 *.pyc
