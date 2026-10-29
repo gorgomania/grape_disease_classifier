@@ -38,15 +38,16 @@ def generate_vineyard_dataset(structure, source_folders, output_dir, max_archive
     
     # Собираем все файлы из папок классов
     class_files = {}
+    print("\nИсходные картинки по классам:")
     for class_name, folder_path in source_folders.items():
         folder = Path(folder_path)
         if folder.exists():
             files = [f for f in folder.iterdir() 
                     if f.is_file() and f.suffix.lower() in ['.jpg', '.jpeg', '.png', '.webp']]
             class_files[class_name] = files
-            print(f"{class_name}: {len(files)} файлов")
+            print(f"   {class_name}: {len(files)} файлов")
         else:
-            print(f"Папка не найдена: {folder_path}")
+            print(f"   {class_name}: папка не найдена ({folder_path})")
             class_files[class_name] = []
     
     # Список классов и веса для взвешенного выбора
@@ -56,10 +57,10 @@ def generate_vineyard_dataset(structure, source_folders, output_dir, max_archive
     # Счётчики для статистики
     class_counts = {cls: 0 for cls in classes}
     
-    # Генерируем кусты во временную папку
-    temp_dir = output_path / "_temp"
-    temp_dir.mkdir(parents=True, exist_ok=True)
-    
+    # Выбираем картинку для каждого куста (без копирования, только план)
+    # Элементы: (исходный файл, имя в архиве, размер)
+    plan = []
+
     total_bushes = 0
     for row_idx, bushes_count in enumerate(structure, start=1):
         for bush_idx in range(1, bushes_count + 1):
@@ -78,16 +79,12 @@ def generate_vineyard_dataset(structure, source_folders, output_dir, max_archive
             source_file = random.choice(files)
             extension = source_file.suffix
             new_filename = f"Ряд {row_idx} Куст {bush_idx}{extension}"
-            output_path_file = temp_dir / new_filename
-            
-            shutil.copy2(source_file, output_path_file)
+
+            plan.append((source_file, new_filename, source_file.stat().st_size))
             total_bushes += 1
             class_counts[class_name] += 1
-            
-            if total_bushes % 100 == 0:
-                print(f"Обработано {total_bushes} кустов...")
-    
-    print(f"\nСоздано {total_bushes} файлов в временной папке")
+
+    print(f"\nВыбрано {total_bushes} кустов")
     
     # Выводим статистику распределения
     print("\nСтатистика распределения:")
@@ -95,51 +92,61 @@ def generate_vineyard_dataset(structure, source_folders, output_dir, max_archive
         percent = (count / total_bushes * 100) if total_bushes > 0 else 0
         print(f"   {cls}: {count} ({percent:.1f}%)")
     
-    # Разбиваем на ZIP архивы
+    # Разбиваем на ZIP архивы, записывая файлы напрямую из исходных папок.
+    # JPG/PNG/WEBP уже сжаты, поэтому кладём без сжатия (ZIP_STORED) — так намного быстрее
     max_size_bytes = max_archive_size_gb * 1024 * 1024 * 1024
     archives = []
     current_archive = None
+    current_zip = None
     current_size = 0
-    archive_index = 1
-    
-    for file_path in sorted(temp_dir.iterdir()):
-        file_size = file_path.stat().st_size
-        
+    archive_index = 0
+
+    # Для отображения прогресса архивации
+    total_bytes = sum(size for _, _, size in plan)
+    processed_bytes = 0
+
+    print()
+    for source_file, arcname, file_size in plan:
         # Если файл больше максимального размера
         if file_size > max_size_bytes:
-            print(f"Файл {file_path.name} слишком большой ({file_size / 1024 / 1024:.1f} МБ), создаём отдельный архив")
+            print(f"\nФайл {arcname} слишком большой ({file_size / 1024 / 1024:.1f} МБ), создаём отдельный архив")
+            archive_index += 1
             archive_name = output_path / f"vineyard_dataset_part_{archive_index}.zip"
-            with zipfile.ZipFile(archive_name, 'w', zipfile.ZIP_DEFLATED) as zf:
-                zf.write(file_path, file_path.name)
+            with zipfile.ZipFile(archive_name, 'w', zipfile.ZIP_STORED) as zf:
+                zf.write(source_file, arcname)
             archives.append(archive_name)
-            archive_index += 1
+            processed_bytes += file_size
             continue
-        
-        # Если текущий архив не существует, создаём
-        if current_archive is None:
-            current_archive = output_path / f"vineyard_dataset_part_{archive_index}.zip"
-            current_size = 0
-        
-        # Если файл не влезает, закрываем архив и создаём новый
-        if current_size + file_size > max_size_bytes:
-            print(f"Создан архив {current_archive.name} ({current_size / 1024 / 1024:.1f} МБ)")
+
+        # Если файл не влезает, закрываем текущий архив
+        if current_zip is not None and current_size + file_size > max_size_bytes:
+            current_zip.close()
+            current_zip = None
+            print(f"\nСоздан архив {current_archive.name} ({current_archive.stat().st_size / 1024 / 1024:.1f} МБ)")
+            archives.append(current_archive)
+
+        # Если архив не открыт, создаём новый
+        if current_zip is None:
             archive_index += 1
             current_archive = output_path / f"vineyard_dataset_part_{archive_index}.zip"
+            current_zip = zipfile.ZipFile(current_archive, 'w', zipfile.ZIP_STORED)
             current_size = 0
-        
+
         # Добавляем файл в архив
-        with zipfile.ZipFile(current_archive, 'a', zipfile.ZIP_DEFLATED) as zf:
-            zf.write(file_path, file_path.name)
+        current_zip.write(source_file, arcname)
         current_size += file_size
-    
-    # Добавляем последний архив
-    if current_archive is not None:
-        print(f"Создан архив {current_archive.name} ({current_size / 1024 / 1024:.1f} МБ)")
+        processed_bytes += file_size
+
+        # Показываем процент выполнения в одной строке
+        percent = processed_bytes / total_bytes * 100 if total_bytes > 0 else 100
+        print(f"\rАрхивация {current_archive.name}: {percent:5.1f}%", end='', flush=True)
+
+    # Закрываем последний архив
+    if current_zip is not None:
+        current_zip.close()
+        print(f"\nСоздан архив {current_archive.name} ({current_archive.stat().st_size / 1024 / 1024:.1f} МБ)")
         archives.append(current_archive)
-    
-    # Удаляем временную папку
-    shutil.rmtree(temp_dir)
-    
+
     print(f"\nГотово! Создано {len(archives)} архивов в {output_path}")
     total_size = 0
     for i, archive in enumerate(archives, 1):
