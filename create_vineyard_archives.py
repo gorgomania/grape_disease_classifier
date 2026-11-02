@@ -94,7 +94,20 @@ def generate_vineyard_dataset(structure, source_folders, output_dir, max_archive
     
     # Разбиваем на ZIP архивы, записывая файлы напрямую из исходных папок.
     # JPG/PNG/WEBP уже сжаты, поэтому кладём без сжатия (ZIP_STORED) — так намного быстрее
-    max_size_bytes = max_archive_size_gb * 1024 * 1024 * 1024
+    max_size_bytes = int(max_archive_size_gb * 1024 * 1024 * 1024)
+    # Накладные расходы ZIP (ZIP_STORED, без zip64):
+    # локальный заголовок 30 байт + имя, запись центрального каталога 46 байт + имя,
+    # и конечная запись каталога 22 байта на весь архив.
+    # Имя хранится в UTF-8, поэтому кириллица занимает 2 байта на символ.
+    ZIP_ENTRY_OVERHEAD = 30 + 46
+    ZIP_END_RECORD = 22
+    # Запас на случай расхождения оценки с фактическим размером
+    SAFETY_MARGIN = 1024 * 1024
+
+    def entry_size(arcname, file_size):
+        return file_size + ZIP_ENTRY_OVERHEAD + 2 * len(arcname.encode('utf-8'))
+
+    archive_limit = max_size_bytes - ZIP_END_RECORD - SAFETY_MARGIN
     archives = []
     current_archive = None
     current_zip = None
@@ -108,7 +121,8 @@ def generate_vineyard_dataset(structure, source_folders, output_dir, max_archive
     print()
     for source_file, arcname, file_size in plan:
         # Если файл больше максимального размера
-        if file_size > max_size_bytes:
+        size_in_zip = entry_size(arcname, file_size)
+        if size_in_zip > archive_limit:
             print(f"\nФайл {arcname} слишком большой ({file_size / 1024 / 1024:.1f} МБ), создаём отдельный архив")
             archive_index += 1
             archive_name = output_path / f"vineyard_dataset_part_{archive_index}.zip"
@@ -119,7 +133,7 @@ def generate_vineyard_dataset(structure, source_folders, output_dir, max_archive
             continue
 
         # Если файл не влезает, закрываем текущий архив
-        if current_zip is not None and current_size + file_size > max_size_bytes:
+        if current_zip is not None and current_size + size_in_zip > archive_limit:
             current_zip.close()
             current_zip = None
             print(f"\nСоздан архив {current_archive.name} ({current_archive.stat().st_size / 1024 / 1024:.1f} МБ)")
@@ -134,7 +148,7 @@ def generate_vineyard_dataset(structure, source_folders, output_dir, max_archive
 
         # Добавляем файл в архив
         current_zip.write(source_file, arcname)
-        current_size += file_size
+        current_size += size_in_zip
         processed_bytes += file_size
 
         # Показываем процент выполнения в одной строке
